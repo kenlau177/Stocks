@@ -1,0 +1,102 @@
+---
+title: "Stocks Report"
+output: html_document
+---
+
+```{r, echo=F, message=F, warning=F}
+library(dplyr)
+library(lubridate)
+library(reshape2)
+library(glue)
+library(ggplot2)
+library(scales)
+library(tidyquant)
+library(rvest)
+library(magrittr)
+library(stringr)
+library(RColorBrewer)
+```
+
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r, echo=F, message=F, warning=F}
+raw = read.csv("prices.csv", stringsAsFactors=F)
+
+dat = raw
+
+tmp_fn = function(x) {
+  # x = filter(dat, symbol == "NOC")
+
+  #print(x$symbol[1])
+    
+  out = arrange(x, date)
+  
+  train = tail(out, 70)
+  # train$time = 1:nrow(train)
+  # fit = lm(close ~ time, train)
+  # out$slope = coef(fit)[2]/mean(train$close, na.rm=T)
+  out$slope = 1
+  
+  out$today_pct_val = mean(tail(train, 7)$close)/mean(train$close)
+
+  return(out)
+}
+
+res_df = group_by(dat, symbol) %>% dplyr::do(tmp_fn(.))
+
+res_agg = group_by(res_df, symbol) %>% 
+            summarise(slope=max(slope), today_pct_val=max(today_pct_val))
+res_agg = mutate(res_agg, slope_score=rank(-slope), pct_val_score=rank(today_pct_val), 
+                 overall_score=pct_val_score)
+res_agg = dplyr::select(res_agg, symbol, overall_score)
+
+out_df = inner_join(res_df, res_agg, by="symbol")
+out_df = dplyr::select(out_df, symbol, date, close, overall_score)
+out_df = mutate(out_df, exchange=grepl("\\.TO", symbol),
+                exchange=case_when(exchange == T ~ "TSX", exchange == F ~ "S&P500"))
+```
+
+```{r, echo=F, message=F, warning=F}
+plot_stocks = function(x) {
+  # x = filter(out_df, exchange=="TSX")
+  
+  x = arrange(x, overall_score)
+  x$symbol = with(x, reorder(symbol, overall_score, mean))
+  x = as.data.frame(x)
+  
+  col_in = rep(brewer.pal(9,"Set1"),times=300)
+  col_in = col_in[1:n_distinct(x$symbol)]
+  gg = ggplot(x, aes(x=as.Date(date), y=close, color=symbol)) + 
+         geom_line(size=.2) + geom_point(size=.2) +
+         facet_wrap(~symbol, ncol=1, scales="free") + 
+         scale_x_date(date_labels="%b %Y", date_breaks = "6 months") + 
+         scale_y_continuous("Price", breaks=pretty_breaks(n=5)) + 
+         scale_colour_manual(values=col_in) + 
+         theme(legend.position="none", text=element_text(size=5))
+  
+  return(gg)
+}
+```
+
+# {.tabset .tabset-fade}
+
+## **TSX**
+
+```{r, echo=F, warning=F, fig.height=150, out.width = '100%'}
+plot_stocks(filter(out_df, exchange=="TSX"))
+```
+
+## **S&P500**
+
+```{r, echo=F, warning=F, fig.height=500, out.width = '100%'}
+plot_stocks(filter(out_df, exchange=="S&P500"))
+```
+
+
+
