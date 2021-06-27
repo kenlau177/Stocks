@@ -3,15 +3,7 @@ setwd("C://Users//klau//Desktop//Work//Github_Ken//Stocks")
 rm(list=ls())
 
 library(dplyr)
-library(lubridate)
-library(reshape2)
-library(glue)
-library(ggplot2)
-library(scales)
 library(tidyquant)
-library(rvest)
-library(magrittr)
-library(stringr)
 
 # 1 -- Update data
 # 2 -- Transform and Output Report
@@ -22,7 +14,6 @@ library(stringr)
 # raw = read.csv("prices_df.csv")
 # raw = raw[,c("symbol","date","close")]
 # write.csv(raw, "prices.csv", row.names=F)
-#
 
 raw_current = read.csv("prices.csv", stringsAsFactors=F)
 
@@ -30,7 +21,7 @@ dat_current = raw_current
 
 symbols = unique(dat_current$symbol)
 
-from1 = max(dat_current$date)
+from1 = max(as.Date(dat_current$date)) + 1
 to1 = Sys.Date() - 1
 
 if(to1 > from1) {
@@ -39,8 +30,6 @@ if(to1 > from1) {
   dat_new$date = as.character(dat_new$date)
   dat_current = rbind(dat_current, dat_new)
 }
-
-range(dat_current$date)
 
 min_date_keep = as.character(max(to1) - 8*365)
 

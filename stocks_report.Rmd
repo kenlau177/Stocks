@@ -5,15 +5,8 @@ output: html_document
 
 ```{r, echo=F, message=F, warning=F}
 library(dplyr)
-library(lubridate)
-library(reshape2)
-library(glue)
 library(ggplot2)
 library(scales)
-library(tidyquant)
-library(rvest)
-library(magrittr)
-library(stringr)
 library(RColorBrewer)
 ```
 
