@@ -77,6 +77,8 @@ plot_stocks = function(x) {
 }
 ```
 
+Latest Date: `r max(out_df$date)`
+
 # {.tabset .tabset-fade}
 
 ## **TSX**
